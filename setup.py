@@ -10,5 +10,6 @@ setup(name='Vespa',
       author='Neil Wilkins',
       author_email='nw14876@bristol.ac.uk',
       url='https://github.com/NeilWilkins/vespa',
+      license='MIT',
       packages=['vespa'],
      )
