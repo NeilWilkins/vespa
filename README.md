@@ -2,7 +2,7 @@
 Python code for VESPA and FK analysis of seismic data
 
 Version 1.0
-Uploaded to GitHub January 2016
+Uploaded to GitHub 8th January 2016
 
 Neil Wilkins
 University of Bristol
