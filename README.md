@@ -6,4 +6,4 @@ Uploaded to GitHub 8th January 2016
 
 Neil Wilkins
 University of Bristol
-nw14876@bristol.ac.uk
+nw14876 (at) bristol (dot) ac (dot) uk
