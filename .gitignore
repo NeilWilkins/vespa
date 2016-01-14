@@ -2,3 +2,4 @@
 dist/
 vespa/*.pyc
 build/
+vespa/.DS_Store
