@@ -31,7 +31,8 @@ class Phase:
         self.slowness = slowness_s_km
         
     def __str__(self):
-        return (self.name, self.time, self.slowness)
+        return_str = "%s, %.1f, %.3f" % (self.name, self.time, self.slowness) 
+        return return_str
 
 def get_station_coordinates(stream):
     '''
