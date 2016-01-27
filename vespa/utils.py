@@ -10,6 +10,26 @@ from obspy.fdsn.header import FDSNException
 
 G_KM_DEG = 111.19 # km / deg, Conversion factor for converting angular great circle distance (in degrees) into km on the surface
 
+class Phase:
+    '''
+    Class for handling phase arrivals.
+    
+    Not to be confused with obspy.core.event.Arrival which does the same thing but with a few more parameters I don't need. Possible clash? Maybe rename this one
+    
+    :type name: string
+    :param name: Name of seismic phase
+    :type time: float
+    :param time: Time after event origin of arrival in seconds
+    :type slowness: float
+    :param slowness: Slowness of seismic phase in seconds / kilometre
+    
+    '''
+    
+    def __init__(self, phase_name, arrival_time, slowness_s_km):
+        self.name = phase_name
+        self.time = arrival_time
+        self.slowness = slowness_s_km
+
 def get_station_coordinates(stream):
     '''
     Calculates the x, y, z coordinates of stations in a seismic array relative to a reference point for a given stream of SAC seismographic data files.
@@ -188,12 +208,24 @@ def find_event(st, timebefore=5, timeafter=5, service="IRIS"):
         print "No event found for stream startttime. Try adjusting time window."
         return
     
+    except AttributeError:
+        print "No stats.sac dictionary, attempting search based on time window alone..."
+        
+        try:
+            cat = webservice.get_events(starttime=st[0].stats.starttime - timebefore, endtime=st[0].stats.starttime + timeafter)
+            
+        except FDSNException:
+            print "No event found for stream startttime. Try adjusting time window."
+            return
+    
     if len(cat) > 1:
         print "Multiple events found for stream starttime. Try adjusting time window."
         print cat
         return
     
     event = cat[0]
+    
+    print event
     
     return event
     
@@ -212,8 +244,8 @@ def get_first_arrival(st, model='ak135'):
 
     Returns
     -------
-    first_arrival : tuple
-        Tuple containing the phase name, arrival time, and slowness of the first arrival
+    phase : Phase object
+        Phase object containing the phase name, arrival time, and slowness of the first arrival
     '''
 
     # Read event depth and great circle distance from SAC header
@@ -223,9 +255,9 @@ def get_first_arrival(st, model='ak135'):
     taup = TauPyModel(model)
     first_arrival = taup.get_travel_times(depth, delta)[0]
 
-    arrival_output = (first_arrival.name, first_arrival.time, first_arrival.ray_param_sec_degree / G_KM_DEG)
+    phase = Phase(first_arrival.name, first_arrival.time, first_arrival.ray_param_sec_degree / G_KM_DEG)
 
-    return arrival_output
+    return phase
     
 def get_arrivals(st, model='ak135'):
     '''
@@ -242,8 +274,8 @@ def get_arrivals(st, model='ak135'):
 
     Returns
     -------
-    first_arrival : tuple
-        Tuple containing the phase name, arrival time, and slowness of the first arrival
+    phase_list : list
+        List containing Phase objects containing the phase name, arrival time, and slowness of each arrival
     '''
 
     # Read event depth and great circle distance from SAC header
@@ -253,11 +285,12 @@ def get_arrivals(st, model='ak135'):
     tau_model = TauPyModel(model)
     arrivals = tau_model.get_travel_times(depth, delta)
     
-    arrivals_output = []
+    phase_list = []
     
     for arrival in arrivals:
-        arrivals_output.append((arrival.name, arrival.time, arrival.ray_param_sec_degree / G_KM_DEG))
+        phase = Phase(arrival.name, arrival.time, arrival.ray_param_sec_degree / G_KM_DEG)
+        phase_list.append(phase)
 
-    return arrivals_output
+    return phase_list
 
 
