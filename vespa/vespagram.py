@@ -11,7 +11,51 @@ from vespa.utils import G_KM_DEG
 from vespa.stacking import linear_stack, nth_root_stack
 from vespa.stats import n_power_vespa, f_vespa
 
-def vespagram(st, smin, smax, ssteps, baz, winlen, stat='power', n=1, display='contourf'):
+def vespagram(st, smin, smax, ssteps, baz, winlen, stat='power', n=1):
+    '''
+    Calculates the vespagram for a seismic array over a given slowness range, for a single backazimuth, using the statistic specified.
+
+    The chosen statistic is calculated as a function of time (in s) and slowness (in s/km). This may be:-
+
+    * 'amplitude' - the raw amplitude of the linear or nth root stack at each time and slowness step;
+    * 'power' - the power in the linear or nth root beam calculated over a time window (length winlen) around each time step for each slowness;
+    * 'F' - the F-statistic of the beam calculated over a time window (length winlen) around each time step for each slowness.
+
+    Parameters
+    ----------
+    st : ObsPy Stream object
+        Stream of SAC format seismograms for the seismic array, length K = no. of stations in array
+    smin  : float
+        Minimum magnitude of slowness vector, in s / km
+    smax  : float
+        Maximum magnitude of slowness vector, in s / km
+    ssteps  : int
+        Integer number of steps between smin and smax for which to calculate the vespagram
+    baz : float
+        Backazimuth of slowness vector, (i.e. angle from North back to epicentre of event)
+    winlen : int
+        Length of Hann window over which to calculate the power.
+    stat : string
+        Statistic to use for plotting the vespagram, either 'amplitude', 'power', or 'F'
+        
+    Returns
+    -------
+    vespagram_data : NumPy array
+        Array of values for the chosen statistic at each slowness and time step. Dimensions: ssteps*len(tr) for traces tr in st.
+    '''
+    
+    if stat == 'amplitude':
+        vespagram_data = np.array([nth_root_stack(st, s, baz, n) for s in np.linspace(smin, smax, ssteps)])
+    elif stat == 'power':
+        vespagram_data = np.array([n_power_vespa(st, s, baz, n, winlen) for s in np.linspace(smin, smax, ssteps)])
+    elif stat == 'F':
+        vespagram_data = np.array([f_vespa(st, s, baz, winlen) for s in np.linspace(smin, smax, ssteps)])
+    else:
+        raise AssertionError("'stat' argument must be one of 'amplitude', 'power' or 'F'")
+
+    return vespagram_data
+
+def plot_vespagram(st, smin, smax, ssteps, baz, winlen, stat='power', n=1, display='contourf'):
     '''
     Plots the vespagram for a seismic array over a given slowness range, for a single backazimuth, using the statistic specified.
 
@@ -43,18 +87,17 @@ def vespagram(st, smin, smax, ssteps, baz, winlen, stat='power', n=1, display='c
 
     assert display == 'contourf' or display == 'contour', "Invalid display option; must be 'contourf' or 'contour'"
 
+    vespagram_data = vespagram(st, smin, smax, ssteps, baz, winlen, stat='power', n=1)
+    
     timestring = str(st[0].stats.starttime.datetime)
     
     if stat == 'amplitude':
-        vespagram_data = np.array([nth_root_stack(st, s, baz, n) for s in np.linspace(smin, smax, ssteps)])
         label = "Amplitude"
         title = timestring + ": " + label + " Vespagram, n=" + str(n)
     elif stat == 'power':
-        vespagram_data = np.array([n_power_vespa(st, s, baz, n, winlen) for s in np.linspace(smin, smax, ssteps)])
         label = "Power"
         title = timestring + ": " + label + " Vespagram, n=" + str(n)
     elif stat == 'F':
-        vespagram_data = np.array([f_vespa(st, s, baz, winlen) for s in np.linspace(smin, smax, ssteps)])
         label = 'F'
         title = timestring + ": " + label + " Vespagram"
     else:
@@ -146,11 +189,56 @@ def f_vespagram_theoretical_arrivals(st, origin, smin, smax, ssteps, baz, winlen
     plt.ylabel("Slowness (s / km)")
     plt.title(title)
     
-def vespagram_backazimuth(st, s, bazmin, bazmax, bazsteps, winlen, stat='power', n=1, display='contourf'):
+def vespagram_backazimuth(st, s, bazmin, bazmax, bazsteps, winlen, stat='power', n=1):
     '''
-    Plots the vespagram for a seismic array over a given slowness range, for a single backazimuth, using the statistic specified.
+    Calculates the vespagram for a seismic array over a given range of backazimuths, for a single scalar slowness, using the statistic specified.
 
-    The chosen statistic is plotted as a function of time (in s) and slowness (in s/km). This may be:-
+    The chosen statistic is calculated as a function of time (in s) and backazimuth (in deg). This may be:-
+
+    * 'amplitude' - the raw amplitude of the linear or nth root stack at each time and slowness step;
+    * 'power' - the power in the linear or nth root beam calculated over a time window (length winlen) around each time step for each slowness;
+    * 'F' - the F-statistic of the beam calculated over a time window (length winlen) around each time step for each slowness.
+
+    Parameters
+    ----------
+    st : ObsPy Stream object
+        Stream of SAC format seismograms for the seismic array, length K = no. of stations in array
+    s : float
+        Magnitude of the slowness vector, in s/km
+    bazmin  : float
+        Minimum backazimuth, in degrees
+    bazmax  : float
+        Maximum backazimuth, in degrees
+    bazsteps  : int
+        Integer number of steps between bazmin and bazmax for which to calculate the vespagram
+    winlen : int
+        Length of Hann window over which to calculate the power.
+    stat : string
+        Statistic to use for plotting the vespagram, either 'amplitude', 'power', or 'F'
+        
+    Returns
+    -------
+    vespagram_data : NumPy array
+        Array of values for the chosen statistic at each backazimuth and time step. Dimensions: bazsteps*len(tr) for traces tr in st.
+    '''
+    
+    if stat == 'amplitude':
+        vespagram_data = np.array([nth_root_stack(st, s, baz, n) for baz in np.linspace(bazmin, bazmax, bazsteps)])
+    elif stat == 'power':
+        vespagram_data = np.array([n_power_vespa(st, s, baz, n, winlen) for baz in np.linspace(bazmin, bazmax, bazsteps)])
+    elif stat == 'F':
+        vespagram_data = np.array([f_vespa(st, s, baz, winlen) for baz in np.linspace(bazmin, bazmax,bazsteps)])
+    else:
+        raise AssertionError("'stat' argument must be one of 'amplitude', 'power' or 'F'")
+        
+    return vespagram_data
+
+    
+def plot_vespagram_backazimuth(st, s, bazmin, bazmax, bazsteps, winlen, stat='power', n=1, display='contourf'):
+    '''
+    Plots the vespagram for a seismic array over a given range of backazimuths, for a single scalar slowness, using the statistic specified.
+
+    The chosen statistic is plotted as a function of time (in s) and backazimuth (in deg). This may be:-
 
     * 'amplitude' - the raw amplitude of the linear or nth root stack at each time and slowness step;
     * 'power' - the power in the linear or nth root beam calculated over a time window (length winlen) around each time step for each slowness;
@@ -174,27 +262,27 @@ def vespagram_backazimuth(st, s, bazmin, bazmax, bazsteps, winlen, stat='power',
         Statistic to use for plotting the vespagram, either 'amplitude', 'power', or 'F'
     display: string
         Option for plotting: either 'contourf' for filled contour plot, or 'contour' for contour plot. See matplotlib documentation for more details.
+    
     '''
-
+    
     assert display == 'contourf' or display == 'contour', "Invalid display option; must be 'contourf' or 'contour'"
         
     timestring = str(st[0].stats.starttime.datetime)
     
+    vespagram_data = vespagram_backazimuth(st, s, bazmin, bazmax, bazsteps, winlen, stat='power', n=1)
+    
     if stat == 'amplitude':
-        vespagram_data = np.array([nth_root_stack(st, s, baz, n) for baz in np.linspace(bazmin, bazmax, bazsteps)])
         label = "Amplitude"
         title = timestring + ": " + label + " Vespagram, n=" + str(n)
     elif stat == 'power':
-        vespagram_data = np.array([n_power_vespa(st, s, baz, n, winlen) for baz in np.linspace(bazmin, bazmax, bazsteps)])
         label = "Power"
         title = timestring + ": " + label + " Vespagram, n=" + str(n)
     elif stat == 'F':
-        vespagram_data = np.array([f_vespa(st, s, baz, winlen) for baz in np.linspace(bazmin, bazmax,bazsteps)])
         label = 'F'
         title = timestring + ": " + label + " Vespagram"
     else:
         raise AssertionError("'stat' argument must be one of 'amplitude', 'power' or 'F'")
-
+    
     plt.figure(figsize=(16, 8))
 
     if display == 'contourf':
