@@ -5,8 +5,8 @@ import numpy as np
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from obspy.taup import TauPyModel
-from obspy.fdsn import Client
-from obspy.fdsn.header import FDSNException
+from obspy.clients.fdsn import Client
+from obspy.clients.fdsn.header import FDSNException
 
 G_KM_DEG = 111.19 # km / deg, Conversion factor for converting angular great circle distance (in degrees) into km on the surface
 
@@ -14,7 +14,7 @@ class Phase:
     '''
     Class for handling phase arrivals.
     
-    Not to be confused with obspy.core.event.Arrival which does the same thing but with a few more parameters I don't need. Possible clash? Maybe rename this one
+    Similar to obspy.core.event.Arrival, which does the same thing but with a few more parameters I don't need
     
     :type name: string
     :param name: Name of seismic phase
@@ -101,7 +101,7 @@ def get_station_coordinates(stream):
 
     return xyz_rel_coords
     
-def plot_array_map(stream):
+def plot_array_map(stream, outfile=None, format='PDF'):
     
     '''
     Plots a map of the seismic array from an ObsPy stream of time series data.
@@ -177,7 +177,7 @@ def plot_array_map(stream):
         plt.text(x + 50, y + 50, labels[i], fontsize=14)
         i += 1
 
-    #plt.savefig('arraymap.pdf', format='PDF', bbox_inches='tight', pad_inches=0.1))
+    plt.savefig(outfile, format=format, bbox_inches='tight', pad_inches=0.1)
     plt.show()
     
 def find_event(st, timebefore=5, timeafter=5, service="IRIS"):

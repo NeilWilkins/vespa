@@ -5,7 +5,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from obspy.taup import TauPyModel
-from obspy.core.util.geodetics import locations2degrees
+from obspy.geodetics import locations2degrees
 
 from vespa.utils import G_KM_DEG
 from vespa.stacking import linear_stack, nth_root_stack
@@ -44,14 +44,19 @@ def vespagram(st, smin, smax, ssteps, baz, winlen, stat='power', n=1):
         Array of values for the chosen statistic at each slowness and time step. Dimensions: ssteps*len(tr) for traces tr in st.
     '''
     
-    if stat == 'amplitude':
-        vespagram_data = np.array([nth_root_stack(st, s, baz, n) for s in np.linspace(smin, smax, ssteps)])
-    elif stat == 'power':
-        vespagram_data = np.array([n_power_vespa(st, s, baz, n, winlen) for s in np.linspace(smin, smax, ssteps)])
-    elif stat == 'F':
-        vespagram_data = np.array([f_vespa(st, s, baz, winlen) for s in np.linspace(smin, smax, ssteps)])
-    else:
-        raise AssertionError("'stat' argument must be one of 'amplitude', 'power' or 'F'")
+    assert stat == 'amplitude' or stat == 'power' or stat == 'F', "'stat' argument must be one of 'amplitude', 'power' or 'F'" 
+    
+    vespagram_data = np.array([])    
+    
+    try:
+        if stat == 'amplitude':
+            vespagram_data = np.array([nth_root_stack(st, s, baz, n) for s in np.linspace(smin, smax, ssteps)])
+        elif stat == 'power':
+            vespagram_data = np.array([n_power_vespa(st, s, baz, n, winlen) for s in np.linspace(smin, smax, ssteps)])
+        elif stat == 'F':
+            vespagram_data = np.array([f_vespa(st, s, baz, winlen) for s in np.linspace(smin, smax, ssteps)])
+    except AssertionError as err:
+        raise err
 
     return vespagram_data
 
@@ -86,8 +91,14 @@ def plot_vespagram(st, smin, smax, ssteps, baz, winlen, stat='power', n=1, displ
     '''
 
     assert display == 'contourf' or display == 'contour', "Invalid display option; must be 'contourf' or 'contour'"
-
-    vespagram_data = vespagram(st, smin, smax, ssteps, baz, winlen, stat='power', n=1)
+    
+    vespagram_data = np.array([])    
+    
+    try:
+        vespagram_data = vespagram(st, smin, smax, ssteps, baz, winlen, stat='power', n=1)
+    except AssertionError as err:
+        print err.args[0]
+        return None
     
     timestring = str(st[0].stats.starttime.datetime)
     
