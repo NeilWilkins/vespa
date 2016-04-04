@@ -177,7 +177,9 @@ def plot_array_map(stream, outfile=None, format='PDF'):
         plt.text(x + 50, y + 50, labels[i], fontsize=14)
         i += 1
 
-    plt.savefig(outfile, format=format, bbox_inches='tight', pad_inches=0.1)
+    if not outfile == None: 
+        plt.savefig(outfile, format=format, bbox_inches='tight', pad_inches=0.1)
+        
     plt.show()
     
 def find_event(st, timebefore=5, timeafter=5, service="IRIS"):
